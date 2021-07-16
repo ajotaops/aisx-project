@@ -1,0 +1,30 @@
+version: '3' #Versión del docker-compose.
+
+services:
+  ghost: #Servicio de ghost
+    image: ghost:4  #Especificamos la imagen que queremos usar.
+    container_name: ghost #Especificamos el nombre del contenedor.
+    ports:
+      - "80:2368" #Exponemos el puerto 80, el 2368 lo utiliza internamente el container.
+    volumes:
+      - /srv/ghost:/var/lib/ghost/content #Montamos el contenido en /srv/ghost
+    depends_on:
+      - mysql #Para que no inicie sin el contenedor mysql.
+    environment:
+      database__client: mysql #Le pasamos el tipo de db.
+      database__connection__host: mysql #Le pasamos el host.
+      database__connection__user: root #Le pasamos el usuario.
+      database__connection__password: example #Le pasamos la contraseña.
+      database__connection__database: ghost #Le pasamos el nombre.
+      url: http://161.35.25.44 #Le pasamos la url. De momento por ip y con http.
+      NODE_ENV: production #Le pasamos el entorno.
+    restart: unless-stopped #Para que el contenedor se inicie al reiniciar el equipo.
+
+  mysql: #Servicio de mysql
+    image: mysql:5.7 #Especificamos la imagen que queremos usar.
+    container_name: mysql #Especificamos el nombre del contenedor.
+    volumes:
+     - /srv/mysql-5.7:/var/lib/mysql #Montamos el contenido en /srv/mysql-5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: example #Ponemos la contraseña de root.
+    restart: unless-stopped #Montamos el contenido en /srv/ghost

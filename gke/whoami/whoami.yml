@@ -1,0 +1,60 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: whoami
+  name: whoami
+  labels:
+    app.kubernetes.io/name: whoami
+spec:
+  selector:
+    app.kubernetes.io/name: whoami
+  ports:
+    - protocol: TCP
+      name: http
+      port: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: whoami
+  name: whoami
+  labels:
+    app.kubernetes.io/name: whoami
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: whoami
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: whoami
+    spec:
+      containers:
+        - name: whoami
+          image: containous/whoami
+          ports:
+            - name: http
+              containerPort: 80
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  namespace: whoami
+  name: whoami
+  labels:
+    app.kubernetes.io/name: whoami
+spec:
+  entryPoints:
+    - https
+  routes:
+    - match: Host(`whoami.alejandrojuan.com`)
+      kind: Rule
+      services:
+        - namespace: whoami
+          name: whoami
+          port: 80
+  tls:
+    certResolver: letsencrypt
+---

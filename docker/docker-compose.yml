@@ -1,0 +1,65 @@
+version: '3' #Versión del docker-compose.
+
+services:
+  ghost: #Servicio de ghost
+    image: ghost:4  #Especificamos la imagen que queremos usar.
+    container_name: ghost #Especificamos el nombre del contenedor.
+#   ports:
+#     - "80:2368" #Exponemos el puerto 80, el 2368 lo utiliza internamente el container.
+    volumes:
+      - /srv/ghost:/var/lib/ghost/content #Montamos el contenido en /srv/ghost
+    depends_on:
+      - mysql #Para que no inicie sin el contenedor mysql.
+    environment:
+      database__client: mysql #Le pasamos el tipo de db.
+      database__connection__host: mysql #Le pasamos el host.
+      database__connection__user: root #Le pasamos el usuario.
+      database__connection__password: example #Le pasamos la contraseña.
+      database__connection__database: ghost #Le pasamos el nombre.
+      url: https://dockdocs.es #Le pasamos la url. De momento por ip y con http.
+      NODE_ENV: production #Le pasamos el entorno.
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ghost.rule=Host(`dockdocs.es`,`www.dockdocs.es`)
+      - traefik.http.routers.ghost.entrypoints=https
+      - traefik.http.routers.ghost.tls=true
+      - traefik.http.routers.ghost.tls.certresolver=tls
+      - traefik.http.routers.ghost.middlewares=redirect-to-https
+    restart: unless-stopped #Para que el contenedor se inicie al reiniciar el equipo.
+
+  mysql: #Servicio de mysql
+    image: mysql:5.7 #Especificamos la imagen que queremos usar.
+    container_name: mysql #Especificamos el nombre del contenedor.
+    volumes:
+     - /srv/mysql-5.7:/var/lib/mysql #Montamos el contenido en /srv/mysql-5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: example #Ponemos la contraseña de root.
+    restart: unless-stopped #Montamos el contenido en /srv/ghost
+ 
+  traefik:
+    image: traefik:v2.2
+    container_name: traefik
+    command:
+      --api
+      --global.sendAnonymousUsage=false
+      --entryPoints.http.address=:80
+      --entryPoints.https.address=:443
+      --certificatesresolvers.tls.acme.tlschallenge=true
+      --certificatesResolvers.tls.acme.storage=/etc/traefik/acme.json
+      --certificatesresolvers.tls.acme.httpchallenge=true
+      --certificatesResolvers.tls.acme.httpChallenge.entryPoint=http
+      --providers.docker=true
+      --providers.docker.exposedbydefault=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /srv/traefik/:/etc/traefik/           
+    ports:
+      - "80:80"
+      - "443:443"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:[a-z-.]+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=http"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+    restart: unless-stopped

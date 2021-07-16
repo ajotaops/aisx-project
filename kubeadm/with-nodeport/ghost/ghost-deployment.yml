@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ghost
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ghost
+  template:
+    metadata:
+      labels:
+        app: ghost
+    spec:
+      containers:
+      - name: ghost
+        image: ghost:4
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: database__client
+          value: mysql
+        - name: database__connection__database
+          value: ghost
+        - name: database__connection__host
+          value: mysql-svc
+        - name: database__connection__password
+          value: example
+        - name: database__connection__user
+          value: root
+        - name: url
+          value: http://192.168.43.3:30003
+        ports:
+        - containerPort: 2368
+        volumeMounts:
+        - mountPath: /var/lib/ghost/content
+          name: ghost-content
+      volumes:
+      - name: ghost-content
+        persistentVolumeClaim:
+         claimName: ghost-pvc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ghost-svc
+spec:
+  type: NodePort
+  selector:
+    app: ghost
+  ports:
+    - port: 2368
+      targetPort: 2368
+      nodePort: 30003

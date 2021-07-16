@@ -1,0 +1,18 @@
+version: "3" #Versión del docker-compose.
+
+services: 
+  nginx: #Servicio de nginx
+    image: nginx #Especificamos la imagen que queremos usar.
+    container_name: nginx # Especificamos el nombre.
+    ports:
+      - "80:80" #Exponemos el puerto 80
+    volumes:
+      - /srv/nginx:/usr/share/nginx/html #Mapeamos la carpeta de /srv/nginx
+    restart: unless-stopped #Para que el contenedor se inicie al reiniciar el equipo.
+
+  nginx_ajotaops: #Servicio de nginx.
+    image: ajotaops/nginx-with-content:v2 #Especificamos la imagen que queremos usar.
+    container_name: nginx_ajotaops #Especificamos el nombre.
+    ports:
+      - "8080:80" #Exponemos el puerto 80
+    restart: unless-stopped #Para que el contenedor se inicie al reiniciar el equipo.
